@@ -39,7 +39,7 @@ s.on('connection', function (ws, req) {
     console.log("Received: " + message);
     s.clients.forEach(function (client) { //broadcast incoming message to all clients (s.clients)
       if (client != ws && client.readyState) { //except to the same client (ws) that sent this message
-        client.send("broadcast: " + message);
+        client.send("" + message);
       }
     });
     // ws.send("From Server only to sender: "+ message); //send to client where message is from

@@ -4,55 +4,128 @@
   <meta charset="utf-8" />
 
   <title>Websocket</title>
-
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-1BmE4kWBq78iYhFldvKuhfTAU6auU8tT94WrHftjDbrCEXSU1oBoqyl2QvZ6jIW3" crossorigin="anonymous">
 </head>
 
 <body>
-  <h1> Welcome to Internet of Things </h1>
-  <input style="width: 800px;height: 200px" type="text" placeholder="enter text here to send to server" id="eingabe"
-    onkeypress="myFunction(event)" />
+  <h1 align="Center"  >Heart Rate Monitoring System</h1>
+  
+  <div class="row" style="padding: 10px;">
+    <div class="col-lg-10">
+      <canvas id="myChart" style="width:100%;"></canvas>
 
-  <button onclick="clearlog()">Clear Logs</button>
+    </div>
+    <div class="col-lg-2">
+      <div style="overflow: scroll;
+      border: solid; height: 500px;
+      border-radius: 9px;" id="display"></div>
+      <br>
+      <button class="btn btn-sm btn-dark" onclick="clearlog()">Clear Logs</button>
+    </div>
+    
+  </div>
 
-  <div style="overflow:scroll; width: 800px; height: 550px; border: solid; border-radius: 9px" id="display"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.js">
+  </script>
+
+
+  <script>
+    const labels = [];
+
+    const data = {
+      labels: labels,
+      datasets: [{
+        label: 'Signal',
+        borderColor: 'rgb(255, 99, 132)',
+        data: [],
+        fill: false,
+      }]
+    };
+
+    const config = {
+      type: 'line',
+      data: data,
+
+      options: {
+
+        responsive: true,
+        elements: {
+          point: {
+            radius: 0
+          }
+        },
+        plugins: {
+
+          title: {
+            display: true,
+            text: 'Min and Max Settings'
+          }
+        },
+        scales: {
+
+          yAxes: [{
+            ticks: {
+              min: 0,
+              max: 1100,
+              stepSize: 100
+            }
+          }]
+        }
+      },
+
+    };
+
+    const myChart = new Chart(
+      document.getElementById('myChart'),
+      config
+    );
+
+    function addData(chart, label, data) {
+      chart.data.labels.push(label);
+      // chart.data.datasets.forEach((dataset) => {
+      //     dataset.data.push(data);
+      // });
+
+      chart.data.datasets[0].data.push(data);
+
+      if (chart.data.datasets[0].data.length > 300) {
+        chart.data.datasets[0].data.shift();
+        labels.shift();
+      }
+
+      chart.update();
+    }
+
+
+
+  </script>
 
   <script>
     //var sock =new WebSocket("ws://localhost:5001");
-    var sock = new WebSocket("ws://172.20.10.2:3000");  //replace this address with the one the node.js server prints out. keep port 3000
-    var display = document.getElementById("display")
+    var sock = new WebSocket("ws://192.168.43.173:3000"); //replace this address with the one the node.js server prints out. keep port 3000
+    var display = document.getElementById("display");
+
+
 
     sock.onopen = function (event) {
       //alert("Socket connected succesfully!!!")
-      setTimeout(function () { sock.send('connection succeeded'); }, 1000);
+      setTimeout(function () {
+        sock.send("connection succeeded");
+      }, 1000);
       display.innerHTML += "connection succeeded <br />";
-
     };
+
     sock.onmessage = function (event) {
-      console.log(event);//show received from server data in console of browser
-      display.innerHTML += event.data + "<br />"; //add incoming message from server to the log screen previous string + new string(message)
-
-    }
-
-    function myFunction(event) {
-      //sock.send("Hello");
-      if (event.keyCode == 13) {	   //when enter is pressed...
-        var text = document.getElementById('eingabe').value;    //assign value of the entered string to te text variable
-        if (text != "") {     //if text is not an empty string
-          //display.innerHTML+="From Client: "+text+"<br />"; //show the message from client in div
-          sock.send(text);    //send string to server
-          display.innerHTML += "<strong>Me: </strong>" + text + "<br />";       //display input text in div (client side)
-          document.getElementById('eingabe').value = "";     //and clear the input field
-        }
-        else {
-          console.log("empty string not sent")
-        }
-      }
-    }
-
+      console.log(event); //show received from server data in console of browser
+      display.innerHTML = event.data + "<br />" + display.innerHTML; //add incoming message from server to the log screen previous string + new string(message)
+      // updateChart(parseInt(event.data));
+      addData(myChart, '', parseInt(event.data));
+    };
     function clearlog() {
       display.innerHTML = "";
     }
   </script>
+
 </body>
 
 </html>
