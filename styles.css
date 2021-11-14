@@ -1,0 +1,27 @@
+body {
+    background-image: url("https://i.pinimg.com/originals/0e/8f/93/0e8f9366cb396a13485588c267750ddd.gif");
+    padding: 2%;
+    /* background-size: 70rem; */
+    background-size: cover;
+    color: aliceblue;
+}
+
+.div-cards {
+    padding: 3%;
+    color: rgba(0, 0, 0, 0.571);
+    background-color: rgba(255, 255, 255, 0.735);
+    border-radius: 30px;
+    box-shadow: 0 4px 8px 0 rgba(0, 0, 0, 0.2), 0 6px 20px 0 rgba(0, 0, 0, 0.19);
+    margin: 2%;
+}
+
+footer {
+    color: rgba(240, 234, 234, 0.893);
+    position: absolute;
+    font-size: 1.2rem;
+    text-align: center;
+    bottom: 0;
+    width: 100%;
+    height: 50px;
+    line-height: 50px;
+}
