@@ -8,11 +8,17 @@
 </head>
 
 <body>
-  <h1 align="Center"  >Heart Rate Monitoring System</h1>
+  <h1 style="text-align: center;">Heart Rate Monitoring System</h1>
   
   <div class="row" style="padding: 10px;">
-    <div class="col-lg-10">
+    <div class="col-lg-7">
       <canvas id="myChart" style="width:100%;"></canvas>
+
+    </div>
+    <div class="col-lg-3" style="text-align: center;">
+      <h4>BPM</h4>
+      <h1 id="bpm-h1"></h1>
+      <p id = "bpm-state"></p>
 
     </div>
     <div class="col-lg-2">
@@ -65,9 +71,9 @@
 
           yAxes: [{
             ticks: {
-              min: 0,
-              max: 1100,
-              stepSize: 100
+              min: 40,
+              max: 150,
+              stepSize: 10
             }
           }]
         }
@@ -88,38 +94,46 @@
 
       chart.data.datasets[0].data.push(data);
 
-      if (chart.data.datasets[0].data.length > 300) {
+      if (chart.data.datasets[0].data.length > 10) {
         chart.data.datasets[0].data.shift();
         labels.shift();
       }
 
       chart.update();
     }
-
-
-
   </script>
 
   <script>
     //var sock =new WebSocket("ws://localhost:5001");
     var sock = new WebSocket("ws://192.168.43.173:3000"); //replace this address with the one the node.js server prints out. keep port 3000
     var display = document.getElementById("display");
-
-
+    var bpmDiv = document.getElementById("bpm-h1");
+    var bpmState = document.getElementById("bpm-state");
 
     sock.onopen = function (event) {
-      //alert("Socket connected succesfully!!!")
-      setTimeout(function () {
-        sock.send("connection succeeded");
-      }, 1000);
       display.innerHTML += "connection succeeded <br />";
     };
 
     sock.onmessage = function (event) {
-      console.log(event); //show received from server data in console of browser
+      console.log(event.data); //show received from server data in console of browser
       display.innerHTML = event.data + "<br />" + display.innerHTML; //add incoming message from server to the log screen previous string + new string(message)
       // updateChart(parseInt(event.data));
-      addData(myChart, '', parseInt(event.data));
+      if (event.data.charAt(0) === 'A') {  // average BPM 
+        bpmDiv.innerHTML = parseInt(event.data.substring(1, event.data.length));
+       //alert()
+      }
+      else if(event.data.charAt(0) === 'S'){ // finger status
+        if (event.data.charAt(1) === '2'){
+          bpmState.innerHTML = "<em>Please place your finger on the sensor</em>";
+        }
+        else if(event.data.charAt(1) === '3'){
+          bpmState.innerHTML = "...";
+        }
+      }
+      else { // bpm values to be plotted in chart
+        addData(myChart, '', parseInt(event.data));
+      }
+     
     };
     function clearlog() {
       display.innerHTML = "";

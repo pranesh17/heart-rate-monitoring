@@ -1,22 +1,29 @@
-#include <DHT.h>
-#define DHTPIN D4     //  digital pin connected to NodeMCU (D4)
-#define DHTTYPE DHT11 // DHT 11
-DHT dht(DHTPIN, DHTTYPE);
-
-
 #include <Arduino.h>
  
 #include <ESP8266WiFi.h>
 #include <WebSocketsClient.h>
- 
+
+#define USE_ARDUINO_INTERRUPTS false
+#include <PulseSensorPlayground.h>
+//const int OUTPUT_TYPE = SERIAL_PLOTTER;
+//  Variables
+
+byte samplesUntilReport;
+const byte SAMPLES_PER_SERIAL_SAMPLE = 10;
+
+PulseSensorPlayground pulseSensor;
+
+int PulseSensorPurplePin = 0;        // Pulse Sensor PURPLE WIRE connected to ANALOG PIN 0
+int LED13 = 13;   //  The on-board Arduion LED
+
 WebSocketsClient webSocket;
- 
-const char *ssid     = "iPhone";
-const char *password = "123456789123";
+
+const char *ssid     = "Sri";
+const char *password = "tabletennis5";
  
 unsigned long messageInterval = 5000;
 bool connected = false;
- 
+
 #define DEBUG_SERIAL Serial
  
 void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
@@ -52,16 +59,32 @@ void webSocketEvent(WStype_t type, uint8_t * payload, size_t length) {
     }
  
 }
- 
+
+
+int Signal;                // holds the incoming raw data. Signal value can range from 0-1024
+int Threshold = 550;            // Determine which Signal to "count as a beat", and which to ingore.
+const int PULSE_INPUT = A0;
+const int PULSE_BLINK = 2;    // Pin 13 is the on-board LED
+const int PULSE_FADE = 5;
+
 void setup() {
-    DEBUG_SERIAL.begin(115200);
- 
-//  DEBUG_SERIAL.setDebugOutput(true);
- 
+    pinMode(LED13,OUTPUT); // pin that will blink to your heartbeat!
+    DEBUG_SERIAL.begin(115200); 
+
+
+  // Configure the PulseSensor manager.
+  pulseSensor.analogInput(PULSE_INPUT);
+  pulseSensor.blinkOnPulse(PULSE_BLINK);
+  pulseSensor.fadeOnPulse(PULSE_FADE);
+
+  pulseSensor.setSerial(Serial);
+  //pulseSensor.setOutputType(OUTPUT_TYPE);
+  pulseSensor.setThreshold(Threshold);
+
+  // Skip the first SAMPLES_PER_SERIAL_SAMPLE in the loop().
+  samplesUntilReport = SAMPLES_PER_SERIAL_SAMPLE;
     DEBUG_SERIAL.println();
-    DEBUG_SERIAL.println();
-    DEBUG_SERIAL.println();
- 
+    
     for(uint8_t t = 4; t > 0; t--) {
         DEBUG_SERIAL.printf("[SETUP] BOOT WAIT %d...\n", t);
         DEBUG_SERIAL.flush();
@@ -76,29 +99,60 @@ void setup() {
     }
     DEBUG_SERIAL.print("Local IP: "); DEBUG_SERIAL.println(WiFi.localIP());
     // server address, port and URL
-    webSocket.begin("172.20.10.2", 3000, "/");
+    webSocket.begin("192.168.43.173", 3000, "/");
  
     // event handler
     webSocket.onEvent(webSocketEvent);
 }
  
 unsigned long lastUpdate = millis();
- 
- 
+
+// The Main Loop Function
 void loop() {
-    webSocket.loop();
-    if (connected && lastUpdate+messageInterval<millis()){
-          float h = dht.readHumidity();
-          // Read temperature as Celsius (the default)
-          float t = dht.readTemperature();
-          String myString = "Humidity : ";     // empty string
-          myString.concat(h);
-          myString.concat(" Temperature : ");
-          myString.concat(t);
-        
+  webSocket.loop();
+  
+    if (connected ){
+      if (pulseSensor.sawNewSample()) {
+    
+    if (--samplesUntilReport == (byte) 0) {
+      samplesUntilReport = SAMPLES_PER_SERIAL_SAMPLE;
+
+      //pulseSensor.getPulseAmplitude();
+      Serial.println(pulseSensor.getLatestSample());
+     
+      if (pulseSensor.sawStartOfBeat()) {
+        //Serial.println("hi");
+        //pulseSensor.outputBeat();
+        //pulseSensor.outputSample();
+        //Serial.println(pulseSensor.getBeatsPerMinute());
+        String myString = "";
+        myString.concat(pulseSensor.getBeatsPerMinute());
         DEBUG_SERIAL.println("[WSc] SENT: " + myString);
         webSocket.sendTXT(myString);
-        delay(3000);
-        lastUpdate = millis();
+        
+      }
+      else{
+      webSocket.sendTXT("N");
+        
+      }
+
+    }
+  }
+
+      
+      //Signal = analogRead(PulseSensorPurplePin);
+
+      
+
+      /*if(Signal > Threshold){                          // If the signal is above "550", then "turn-on" Arduino's on-Board LED.
+        digitalWrite(LED13,HIGH);
+      } else {
+        digitalWrite(LED13,LOW);                //  Else, the sigal must be below "550", so "turn-off" this LED.
+      }*/
+
+       
+      
+
+      //lastUpdate = millis();
     }
 }
