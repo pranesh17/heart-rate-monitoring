@@ -179,7 +179,7 @@ s.on('connection', function (ws, req) {
 
                   var mailOptions = {
                     from: pass.GAccount,
-                    to: "harishcse18501@gmail.com",
+                    to: doctorEmail,
                     subject: 'Alert from Heart Rate Monitoring System',
                     html: 'The average BPM of the patient is ' + bpmMailString
                   }
