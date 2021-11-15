@@ -1,10 +1,13 @@
 var bodyParser = require("body-parser");
 const express = require('express');
+const ejs = require("ejs");
 const app = express();
 var http = require('http');
-var path = require("path");
-//app.use(bodyParser.urlencoded({ extended: false }));
-//app.use(bodyParser.json());
+var nodemailer = require('nodemailer');
+
+app.set("view engine", "ejs");
+app.use(express.static("public"));
+app.use(express.urlencoded({ extended: true }));
 
 const server = http.createServer(app);//create a server
 
@@ -12,13 +15,36 @@ require('dns').lookup(require('os').hostname(), function (err, add, fam) {
   console.log('addr: ' + add);
 })
 
-/**********************websocket setup**************************************************************************************/
-
+// websocket setup
 const WebSocket = require('ws');
 const s = new WebSocket.Server({ server });
+var user = null;
+var doctorEmail = "harishcse18501@gmail.com";
 
-app.get('/', function (req, res) {
-  res.sendFile(path.join(__dirname + '/index.html'));
+app.get('/', (req, res) => {
+  if (user == null) {
+    res.render("login");
+  } else {
+    res.render("index", {
+      'doctor': doctorEmail
+    });
+  }
+});
+
+app.post('/', (req, res) => {
+  user = req.body.email;
+  console.log(user);
+  res.redirect("/");
+});
+
+app.post('/changeDoctor', (req, res) => {
+  doctorEmail = req.body.doctorEmail;
+  res.sendStatus(200);
+});
+
+app.get('/logout', (req, res) => {
+  user = null;
+  res.redirect("/");
 });
 
 var msgCount = 0;
@@ -26,6 +52,24 @@ var ignoreInitialBeats = 20;
 var beats = [];
 var lastBeatAt = 0;
 var state = 0;
+var bpmavg = [];
+var numWarnings = 0;
+var maxWarningLimit = 1;
+
+var pass = {
+  'GAccount': "projectmailer029@gmail.com",
+  'GPassword': "#d$s27&sqW2"
+}
+
+var transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: pass.GAccount,
+    pass: pass.GPassword
+  }
+});
+
+
 
 s.on('connection', function (ws, req) {
   ws.on('message', function (message) {
@@ -79,6 +123,82 @@ s.on('connection', function (ws, req) {
               }
 
               console.log("sum: " + avg);
+              bpmavg.push(avg);
+              flag = 0
+              if (bpmavg.length == 2) {
+                if (bpmavg[0] < 60) {
+                  flag = 1
+                }
+                else if (bpmavg[0] > 90) {
+                  flag = 2
+                }
+                else {
+                  flag = 0
+                }
+                if (flag != 0) {
+                  for (var i = 1; i < bpmavg.length; i++) {
+                    if (flag == 1) {
+                      if (bpmavg[i] < 60) {
+                        continue;
+                      }
+                      else {
+                        flag = 0;
+                        break;
+                      }
+                    }
+                    else if (flag == 2) {
+                      if (bpmavg[i] > 90) {
+                        continue;
+                      }
+                      else {
+                        flag = 0;
+                        break;
+                      }
+
+                    }
+                  }
+                }
+
+
+
+
+                if (flag != 0) {
+                  client.send("W");
+                  numWarnings += 1;
+                }
+
+                if (numWarnings == maxWarningLimit) {
+                  numWarnings = 0;
+                  var bpmMailString = "";
+                  if (flag == 1) {
+                    bpmMailString = "below 60";
+                  }
+                  else if (flag == 2) {
+                    bpmMailString = "above 90";
+                  }
+
+                  var mailOptions = {
+                    from: pass.GAccount,
+                    to: "harishcse18501@gmail.com",
+                    subject: 'Alert from Heart Rate Monitoring System',
+                    html: 'The average BPM of the patient is ' + bpmMailString
+                  }
+
+                  transporter.sendMail(mailOptions, function (err, info) {
+                    if (err) {
+                      console.log(err);
+                      //console.log("Error occured. Mail not sent");
+                    }
+                    else {
+                      console.log("Email sent: " + info.response);
+                    }
+                  });
+
+
+                }
+
+                bpmavg = [];
+              }
 
               avg /= beats.length;
               console.log("avg: " + avg);
