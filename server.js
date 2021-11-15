@@ -181,7 +181,7 @@ s.on('connection', function (ws, req) {
                     from: pass.GAccount,
                     to: doctorEmail,
                     subject: 'Alert from Heart Rate Monitoring System',
-                    html: 'The average BPM of the patient is ' + bpmMailString
+                    html: 'The average BPM of the user ' + user + ' is ' + bpmMailString
                   }
 
                   transporter.sendMail(mailOptions, function (err, info) {
