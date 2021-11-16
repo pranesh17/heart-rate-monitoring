@@ -86,8 +86,8 @@ s.on('connection', function (ws, req) {
   ws.on('message', function (message) {
 
 
-    s.clients.forEach(function (client) { //broadcast incoming message to all clients (s.clients)
-      if (client != ws && client.readyState) { //except to the same client (ws) that sent this message
+    s.clients.forEach(function (client) {
+      if (client != ws && client.readyState) {
         if (("" + message).charAt(0) === "N") {
           var now = (new Date().getTime()) / 1000;
           if (now - lastBeatAt > 3) {
@@ -137,6 +137,7 @@ s.on('connection', function (ws, req) {
               //console.log("sum: " + avg);
               avg /= beats.length;
               bpmavg.push(avg);
+              client.send("A" + avg.toString()); // sending average bpm to browser
 
               if (bpmavg.length == 2) {
                 if (bpmavg[0] < 60) {
@@ -215,10 +216,6 @@ s.on('connection', function (ws, req) {
                 bpmavg = [];
               }
 
-
-              console.log("avg: " + avg);
-
-              client.send("A" + avg.toString()); // sending average bpm to browser
               msgCount = 20;
               beats = [];
             }
