@@ -21,6 +21,16 @@ const s = new WebSocket.Server({ server });
 var user = null;
 var doctorEmail = "harishcse18501@gmail.com";
 
+var msgCount = 0;
+var ignoreInitialBeats = 20;
+var beats = [];
+var lastBeatAt = 0;
+var state = 0;
+var bpmavg = [];
+var numWarnings = 0;
+var maxWarningLimit = 1;
+var flag = 0;
+
 app.get('/', (req, res) => {
   if (user == null) {
     res.render("login");
@@ -43,18 +53,19 @@ app.post('/changeDoctor', (req, res) => {
 });
 
 app.get('/logout', (req, res) => {
+  msgCount = 0;
+  ignoreInitialBeats = 20;
+  beats = [];
+  lastBeatAt = 0;
+  state = 0;
+  bpmavg = [];
+  numWarnings = 0;
+  maxWarningLimit = 1;
+  flag = 0;
   user = null;
   res.redirect("/");
 });
 
-var msgCount = 0;
-var ignoreInitialBeats = 20;
-var beats = [];
-var lastBeatAt = 0;
-var state = 0;
-var bpmavg = [];
-var numWarnings = 0;
-var maxWarningLimit = 1;
 
 var pass = {
   'GAccount': "projectmailer029@gmail.com",
@@ -92,6 +103,7 @@ s.on('connection', function (ws, req) {
                 console.log("case 2 - finger not placed");
                 state = 2;
                 client.send("S2");
+                msgCount = 0;
               }
             }
           }
@@ -122,22 +134,24 @@ s.on('connection', function (ws, req) {
                 avg += beats[i];
               }
 
-              console.log("sum: " + avg);
+              //console.log("sum: " + avg);
+              avg /= beats.length;
               bpmavg.push(avg);
-              flag = 0
+
               if (bpmavg.length == 2) {
                 if (bpmavg[0] < 60) {
-                  flag = 1
+                  flag = 1;
                 }
                 else if (bpmavg[0] > 90) {
-                  flag = 2
+                  flag = 2;
                 }
                 else {
-                  flag = 0
+                  flag = 0;
                 }
                 if (flag != 0) {
+
                   for (var i = 1; i < bpmavg.length; i++) {
-                    if (flag == 1) {
+                    if (flag === 1) {
                       if (bpmavg[i] < 60) {
                         continue;
                       }
@@ -146,7 +160,7 @@ s.on('connection', function (ws, req) {
                         break;
                       }
                     }
-                    else if (flag == 2) {
+                    else if (flag === 2) {
                       if (bpmavg[i] > 90) {
                         continue;
                       }
@@ -162,7 +176,8 @@ s.on('connection', function (ws, req) {
 
 
 
-                if (flag != 0) {
+                if (flag !== 0) {
+                  //console.log("flaginside " + flag);
                   client.send("W");
                   numWarnings += 1;
                 }
@@ -200,7 +215,7 @@ s.on('connection', function (ws, req) {
                 bpmavg = [];
               }
 
-              avg /= beats.length;
+
               console.log("avg: " + avg);
 
               client.send("A" + avg.toString()); // sending average bpm to browser

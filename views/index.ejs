@@ -70,6 +70,24 @@
     #logout-button:hover {
       text-decoration: none;
     }
+
+    .heartBeatIcon {
+      animation: blink 1s linear infinite;
+    }
+
+    @keyframes blink {
+      0% {
+        opacity: 0;
+      }
+
+      50% {
+        opacity: .5;
+      }
+
+      100% {
+        opacity: 1;
+      }
+    }
   </style>
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
@@ -116,9 +134,11 @@
         <br>
         <p id="bpm-state"><em>Place your finger on the sensor</em></p> <!-- bpm status message -->
         <br>
-        <div id="bpm-warning" style="display: none;" class="alert alert-danger" role="alert">
-          Your BPM is abnormal!
-        </div>
+        
+      </div>
+      <br>
+      <div id="bpm-warning" style="display: none; border-radius: 30px;" class="alert alert-danger" role="alert">
+        Your BPM is abnormal!
       </div>
     </div>
 
@@ -254,7 +274,7 @@
           bpmState.innerHTML = "<em>Please place your finger on the sensor</em>";
         }
         else if (event.data.charAt(1) === '3') {
-          bpmState.innerHTML = `<i class="fas fa-heartbeat"></i>`;
+          bpmState.innerHTML = `<i class="fas fa-heartbeat fa-2x heartBeatIcon"></i>`;
         }
       }
       else if (event.data.charAt(0) === 'W') {
